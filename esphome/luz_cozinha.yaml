@@ -1,0 +1,84 @@
+esphome:
+  name: luz_cozinha
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  use_address: 192.168.2.153
+
+api:
+  password: !secret api_password
+
+logger:
+
+ota:
+  password: !secret api_password
+
+binary_sensor:
+  - platform: gpio
+    id: swt1
+    pin:
+      number: D1
+      mode: INPUT_PULLUP
+    on_state:
+      - light.toggle: light1
+  - platform: gpio
+    id: swt2
+    pin:
+      number: D5
+      mode: INPUT_PULLUP
+    on_state:
+      - light.toggle: light2
+  - platform: gpio
+    id: swt3
+    pin:
+      number: D7
+      mode: INPUT_PULLUP
+    on_state:
+      - light.toggle: light3
+  - platform: template
+    id: campainha
+    name: Campainha
+    device_class: sound
+#    icon : "mdi:bell"
+    lambda: return (id(button_adc).state < .5);
+
+sensor:
+  - platform: adc
+    pin: A0
+    id: button_adc
+    update_interval: 0.1s
+
+
+output:
+  - platform: gpio
+    id: relay1
+    pin: D2
+  - platform: gpio
+    id: relay2
+    pin: D6
+  - platform: gpio
+    id: relay3
+    pin: D8
+
+light:
+  - platform: binary
+    id: light1
+    name: Luz da Cozinha
+    output: relay1
+  - platform: binary
+    id: light2
+    name: Luz da Sala 2
+    output: relay2
+  - platform: binary
+    id: light3
+    name: Luz da Sala 3
+    output: relay3
+
+status_led:
+  pin:
+    number: D4
+    inverted: true

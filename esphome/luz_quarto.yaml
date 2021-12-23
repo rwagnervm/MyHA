@@ -1,0 +1,67 @@
+esphome:
+  name: luz_quarto
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  use_address: 192.168.2.118
+
+api:
+  password: !secret api_password
+
+logger:
+
+ota:
+  password: !secret api_password
+
+binary_sensor:
+  - platform: gpio
+    id: swt1
+    pin:
+      number: D5
+      mode: INPUT_PULLUP
+    on_state:
+      - light.toggle: light1
+  - platform: remote_receiver
+    id: btn_verde
+    nec:
+      address: 0xFB04
+      command: 0x8E71
+    on_press:
+      - light.toggle: light1
+
+output:
+  - platform: gpio
+    id: relay1
+    pin: 12
+
+light:
+  - platform: binary
+    id: light1
+    name: Luz do Quarto
+    output: relay1
+
+remote_receiver:
+  pin:
+    number: D1
+    mode: INPUT_PULLUP
+    inverted: true
+  dump: nec
+
+sensor:
+  - platform: dht
+    pin: D2
+    temperature:
+      name: Temperatura do Quarto
+    humidity:
+      name: Umidade do Quarto
+    model: DHT22
+    update_interval: 2s
+
+status_led:
+  pin:
+    number: 2
+    inverted: true

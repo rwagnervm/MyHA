@@ -1,0 +1,53 @@
+esphome:
+  name: varanda_tras
+  platform: ESP8266
+  board: esp8285
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  use_address: 192.168.2.227
+
+api:
+  password: !secret api_password
+
+logger:
+
+ota:
+  password: !secret api_password
+
+sensor:
+  - platform: ultrasonic
+    timeout: 1m
+    trigger_pin: GPIO2
+    echo_pin: GPIO13
+    update_interval: 1s
+    name: "Nivel da Caixa"
+    unit_of_measurement: "%"
+    icon: "mdi:water"
+    accuracy_decimals: 1
+    filters:
+      - median:
+      - lambda: return 100-((x*100-16)/((70−16)/100));
+      - delta: 0.5
+
+binary_sensor:
+  - platform: gpio
+    id: swt
+    pin:
+      number: RX
+      mode: INPUT_PULLUP
+    on_state:
+      - light.toggle: luz
+
+output:
+  - platform: gpio
+    id: relay
+    pin: GPIO12
+
+light:
+  - platform: binary
+    id: luz
+    name: Luz da Varanda de Tras
+    output: relay

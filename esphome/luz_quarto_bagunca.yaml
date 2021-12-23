@@ -1,0 +1,51 @@
+esphome:
+  name: luz_quarto_bagunca
+  platform: ESP8266
+  board: esp8285
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  use_address: 192.168.2.225
+
+api:
+  password: !secret api_password
+
+logger:
+
+ota:
+  password: !secret api_password
+
+binary_sensor:
+  - platform: gpio
+    id: btn
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: true
+    on_press:
+      - light.toggle: luz
+  - platform: gpio
+    id: swt
+    pin:
+      number: RX
+      mode: INPUT_PULLUP
+    on_state:
+      - light.toggle: luz
+
+output:
+  - platform: gpio
+    id: relay
+    pin: GPIO12
+
+light:
+  - platform: binary
+    id: luz
+    name: Luz do Quarto da Bagunca
+    output: relay
+
+status_led:
+  pin:
+    number: GPIO13
+    inverted: true

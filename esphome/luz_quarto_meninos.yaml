@@ -1,0 +1,53 @@
+esphome:
+  name: luz_quarto_meninos
+  platform: ESP8266
+  board: esp8285
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  use_address: 192.168.2.144
+
+api:
+  password: !secret api_password
+
+logger:
+
+ota:
+  password: !secret api_password
+
+binary_sensor:
+  - platform: gpio
+    id: swt1
+    pin:
+      number: RX
+      mode: INPUT_PULLUP
+    on_state:
+      - light.toggle: light1
+
+output:
+  - platform: gpio
+    id: relay1
+    pin: 12
+
+light:
+  - platform: binary
+    id: light1
+    name: Luz do Quarto dos Meninos
+    output: relay1
+
+sensor:
+  - platform: dht
+    pin: 0
+    temperature:
+      name: Temperatura do Quarto dos Meninos
+    humidity:
+      name: Umidade do Quarto dos Meninos
+    model: DHT22
+    update_interval: 2s
+
+status_led:
+  pin:
+    number: 13
+    inverted: true

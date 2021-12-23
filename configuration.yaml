@@ -1,0 +1,188 @@
+default_config:
+
+tts:
+  - platform: google_translate
+    service_name: google_say
+    language: "pt"
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+recorder:
+  purge_keep_days: 2
+  exclude:
+    entities:
+      - sun.sun
+
+frontend:
+  themes: !include_dir_merge_named themes
+
+http:
+  ssl_certificate: !secret ssl_certificate
+  ssl_key: !secret ssl_key
+
+media_player:
+  - platform: androidtv
+    name: MiBox
+    host: 192.168.1.45
+  - platform: androidtv
+    name: Firestick
+    device_class: firetv
+    host: 192.168.1.62
+  - platform: lg_netcast
+    name: TV do Quarto
+    host: 192.168.1.47
+    access_token: !secret tv_quarto_access_token
+
+binary_sensor:
+  - platform: ping
+    host: 192.168.2.215
+    count: 1
+    scan_interval: 5
+    name: Ping
+  - platform: template
+    sensors:
+      dirigindo:
+        friendly_name: "Dirigindo"
+        # yamllint disable rule:line-length
+        value_template: "{{'90:3A:E6:18:2F:F8' in state_attr('sensor.s20_bluetooth_connection', 'connected_paired_devices') }}"
+        # yamllint enable rule:line-length
+#  - platform: mqtt
+#    state_topic: "wallpanel/sala/sensor/motion"
+#    name: "Motion"
+#    payload_on: '{"value":true}'
+#    payload_off: '{"value":false}'
+#    device_class: motion
+#  - platform: mqtt
+#    state_topic: "wallpanel/sala/sensor/face"
+#    name: "Face Detected"
+#    payload_on: '{"value":true}'
+#    payload_off: '{"value":false}'
+#    device_class: motion
+
+#device_tracker:
+#  - platform: bluetooth_tracker
+#    new_device_defaults:
+#      track_new_devices: true
+#  - platform: bluetooth_le_tracker
+#    new_device_defaults:
+#      track_new_devices: true
+
+# - platform: luci
+#   host: 192.168.1.1
+#   username: root
+#   password: xxx
+
+sensor:
+  - platform: command_line
+    name: Temperatura CPU
+    command: "cat /sys/class/thermal/thermal_zone0/temp"
+    unit_of_measurement: "°C"
+    value_template: "{{ value | multiply(0.001)|round(1) }}"
+    scan_interval: 5
+
+template:
+  - sensor:
+      - name: Ping
+        state: >
+          {{ state_attr('binary_sensor.ping', 'round_trip_time_avg') }}
+        unit_of_measurement: ms
+      - name: Consumo da Casa
+        unit_of_measurement: W
+        # yamllint disable rule:line-length
+        state: "{{ (states.sensor.potencia_geral.state|float)-(states.sensor.consumo_da_geladeira.state|float)}}"
+        # yamllint enable rule:line-length
+#  - platform: mqtt
+#    state_topic: "wallpanel/sala/sensor/qrcode"
+#    name: "QR Code"
+#    value_template: ""
+
+google_assistant:
+  project_id: !secret google_assistant_project_id
+  report_state: true
+  service_account:
+    private_key: !secret google_assistant_private_key
+    client_email: !secret google_assistant_client_email
+
+utility_meter:
+  daily_energy:
+    source: sensor.consumo_total
+    cycle: daily
+  weekly_energy:
+    source: sensor.consumo_total
+    cycle: weekly
+  monthly_energy:
+    source: sensor.consumo_total
+    cycle: monthly
+  geladeira_daily:
+    source: sensor.consumo_diario_geladeira
+    cycle: daily
+  geladeira_monthly:
+    source: sensor.consumo_diario_geladeira
+    cycle: monthly
+
+weback:
+  username: !secret weback_username
+  password: !secret weback_password
+
+alarm_control_panel:
+  - platform: manual
+    name: Alarme
+    delay_time: 0
+    arming_time: 0
+    trigger_time: 60000
+
+alexa:
+  smart_home:
+    filter:
+      include_entities:
+        - switch.bomba
+      include_entity_globs:
+        - binary_sensor.porta*
+        - binary_sensor.movimento_*
+      include_domains:
+        - light
+        - fan
+        - climate
+        - vacuum
+      exclude_domains:
+        - switch
+    entity_config:
+      vacuum.hx_x506_cc_50_e3_59_15_b1:
+        name: "C3 do Pó"
+
+intent:
+intent_script:
+  LocateIntent:
+    action:
+      service: notify.telegram
+      data:
+        title: "Estão lhe procurando"
+        message: "Estão lhe procurando"
+    speech:
+      type: plain
+      text: Em casa
+    card:
+      type: simple
+      title: Location queried
+      content: Ask Home Assistant about user location
+
+#input_text:
+#  alexa_actionable_notification:
+#    name: Alexa Actionable Notification Holder
+#    max: 255
+#    initial: '{"text": "This is a test of the alexa actions custom skill.
+# Did it work?", "event": "actionable.skill.test"}'
+
+telegram_bot:
+  - platform: polling
+    api_key: !secret telegram_bot_api_key
+    allowed_chat_ids:
+      - !secret telegram_bot_chat_id
+
+notify:
+  - platform: telegram
+    name: telegram
+    chat_id: !secret telegram_bot_chat_id

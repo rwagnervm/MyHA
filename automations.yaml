@@ -1,0 +1,432 @@
+- id: ApagarLuzesAoSair
+  alias: Apagar as luzes ao sair
+  trigger:
+    - platform: state
+      entity_id: person.roberto_wagner
+      to: not_home
+      for:
+        minutes: 2
+  condition:
+    - condition: state
+      entity_id: group.todos_dispositivos
+      state: "on"
+  action:
+    - service: notify.mobile_app_s20
+      data:
+        title: Existem luzes ligadas em casa. Deseja desligá-las?
+        # yamllint disable rule:line-length
+        message: "{{ expand('group.todos_dispositivos') | selectattr('state', 'equalto', 'on') | map(attribute='name') | list | join(', ') }}"
+        # yamllint enable rule:line-length
+        data:
+          actions:
+            - action: desligar_luzes_notification
+              title: Desligar luzes
+  mode: single
+- id: LigarAlarmeApagarLuzesAoSair
+  alias: Ligar Alarme e Apagar as luzer ao Sair
+  trigger:
+    - platform: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: desligar_luzes_notification
+  action:
+    - service: alarm_control_panel.alarm_arm_away
+      entity_id: alarm_control_panel.alarme
+    - service: homeassistant.turn_off
+      entity_id: group.todos_dispositivos
+
+- id: DesligarAlarmeAoChegar
+  alias: Desligar Alarme ao Chegar
+  trigger:
+    platform: state
+    entity_id: device_tracker.s20
+    to: home
+  action:
+    - service: alarm_control_panel.alarm_disarm
+      entity_id: alarm_control_panel.alarme
+
+- id: LigarLuzGaragem
+  alias: Ligar a luz da garagem ao detectar movimento
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.portao_da_garagem
+      to: "on"
+    - platform: state
+      entity_id: binary_sensor.movimento_garagem
+      to: "on"
+  condition:
+    condition: and
+    conditions:
+      - condition: state
+        entity_id: light.luz_da_garagem
+        state: "off"
+      - condition: or
+        conditions:
+          - condition: sun
+            after: sunset
+          - condition: sun
+            before: sunrise
+  action:
+    - service: homeassistant.turn_on
+      entity_id: light.luz_da_garagem
+    - delay: 120s
+    - service: homeassistant.turn_off
+      entity_id: light.luz_da_garagem
+
+- id: ApagarLuzesBaixoAoFecharPorta
+  alias: Apagar Luzes Baixo ao Fechar Porta
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.porta_da_frente
+      to: "off"
+      for:
+        minutes: 5
+  action:
+    - service: homeassistant.turn_off
+      entity_id: group.luzes_baixo
+
+- id: NotificarCampainha
+  alias: Notificar Campainha
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.campainha
+      from: "off"
+      to: "on"
+  action:
+    - service: notify.mobile_app_s20
+      data:
+        message: Alguem tocou a campainha
+        data:
+          clickAction: "/lovelace-mendes/rua"
+          tag: "campainha"
+          image: /api/camera_proxy/camera.camera1
+    - service: camera.snapshot
+      data:
+        entity_id: camera.camera1
+        # yamllint disable rule:line-length
+        filename: /media/local/campainha_{{as_local(states.automation.notificar_campainha.attributes.last_triggered).strftime('%Y%m%d_%H%M%S')}}.jpg
+# yamllint enable rule:line-length
+
+- id: NotificarPortao
+  alias: Notificar ao abrir portao
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.portao_da_garagem
+      from: "off"
+      to: "on"
+  action:
+    - repeat:
+        sequence:
+          - service: notify.mobile_app_s20
+            data:
+              message: Portao Aberto
+              data:
+                clickAction: "/lovelace-mendes/rua"
+                tag: "portao-garagem"
+                actions:
+                  - action: fechar_portao_notification
+                    title: Fechar Portão
+          - delay: 00:00:15
+        until:
+          - condition: state
+            entity_id: binary_sensor.portao_da_garagem
+            state: "off"
+    - service: notify.mobile_app_s20
+      data:
+        message: Portao Fechado
+        data:
+          clickAction: "/lovelace-mendes/rua"
+          tag: "portao-garagem"
+
+- id: fechar_portao_notification
+  alias: Fechar portao notificacao
+  trigger:
+    - platform: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: fechar_portao_notification
+  action:
+    service: cover.close_cover
+    entity_id: cover.garagem
+
+- id: LigarLuzEscada
+  alias: Ligar a luz da escada ao detectar movimento
+  trigger:
+    - platform: state
+      entity_id: group.escada_binary_sensors
+      to: "on"
+  condition:
+    condition: and
+    conditions:
+      - condition: state
+        entity_id: light.luz_da_garagem
+        state: "off"
+      - condition: or
+        conditions:
+          - condition: sun
+            after: sunset
+            after_offset: -0:01:00
+          - condition: sun
+            before: sunrise
+            before_offset: 0:01:00
+  action:
+    - service: homeassistant.turn_on
+      entity_id: light.luz_da_escada_1
+    - delay: 20s
+    - service: homeassistant.turn_off
+      entity_id: light.luz_da_escada_1
+
+- id: 13a588d725ce4a65a38e3fc001b861be
+  alias: Aspirador Velocidade
+  trigger:
+    platform: template
+    value_template:
+      "{{state_attr('vacuum.hx_x506_cc_50_e3_59_15_b1', 'raw_state')
+      == 'AutoClean'}}"
+  action:
+    - service: vacuum.set_fan_speed
+      data:
+        entity_id: vacuum.hx_x506_cc_50_e3_59_15_b1
+        fan_speed: Strong
+- id: 09c0b93e91e54d27b269d0567db3d270
+  alias: Aspirador Carregar
+  trigger:
+    platform: template
+    value_template:
+      "{{state_attr('vacuum.hx_x506_cc_50_e3_59_15_b1', 'raw_state')
+      == 'BackCharging'}}"
+  action:
+    - service: notify.mobile_app_s20
+      data_template:
+        title: Faxina
+        message: Faxina Completa
+- id: alerta_falta_energia
+  alias: Alerta Falta de Energia
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.voltagem_geral
+      below: 180
+  action:
+    - service: notify.mobile_app_s20
+      data:
+        title: Falta de energia
+        message: Falta de energia
+  mode: single
+- alias: Alerta Nivel Agua
+  trigger:
+    platform: template
+    value_template: "{{ states.sensor.nivel_da_caixa.state|float < 30 }}"
+    for:
+      seconds: 300
+  condition:
+    condition: template
+    # yamllint disable rule:line-length
+    value_template: "{{ (as_timestamp(now()) - as_timestamp(states.automation.alerta_nivel_agua.attributes.last_triggered | default(0)) | int > 900)}}"
+    # yamllint enable rule:line-length
+  action:
+    - service: notify.mobile_app_s20
+      data_template:
+        title: Caixa de água
+        message: Nivel da caixa em {{states.sensor.nivel_da_caixa.state}}%
+        data:
+          actions:
+            - action: ligar_bomba_notification
+              title: Ligar Bomba
+- id: ligar_bomba_notification
+  alias: Ligar Bomba Notificacao
+  trigger:
+    - platform: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: ligar_bomba_notification
+  action:
+    service: switch.turn_on
+    entity_id: switch.bomba
+- id: desligar_bomba
+  alias: Desligar Bomba
+  trigger:
+    - platform: template
+      value_template: "{{states.sensor.nivel_da_cisterna.state|float < 20}}"
+      for:
+        seconds: 10
+    - platform: template
+      value_template: "{{states.sensor.nivel_da_caixa.state|float > 90}}"
+      for:
+        seconds: 10
+  action:
+    service: switch.turn_off
+    entity_id: switch.bomba
+- id: Dirigindo
+  alias: Dirigindo
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.dirigindo
+      to: "on"
+    - platform: state
+      entity_id: device_tracker.s20
+  condition:
+    - condition: state
+      entity_id: binary_sensor.dirigindo
+      state: "on"
+  action:
+    - service: device_tracker.see
+      data:
+        dev_id: wrv
+        location_name: Em trânsito
+        host_name: WRV
+        gps:
+          - "{{ state_attr('device_tracker.s20', 'latitude') }}"
+          - "{{ state_attr('device_tracker.s20', 'longitude') }}"
+        gps_accuracy: "{{ state_attr('device_tracker.s20', 'gps_accuracy')
+          }}"
+- id: Estacionando
+  alias: Estacionando
+  trigger:
+    platform: state
+    entity_id: binary_sensor.dirigindo
+    to: "off"
+  action:
+    - service: notify.mobile_app_s20
+      data:
+        message: request_location_update
+    - service: device_tracker.see
+      data:
+        dev_id: wrv
+        location_name: Estacionado
+        host_name: WRV
+        gps:
+          - "{{ state_attr('device_tracker.s20', 'latitude') }}"
+          - "{{ state_attr('device_tracker.s20', 'longitude') }}"
+        gps_accuracy: "{{ state_attr('device_tracker.s20', 'gps_accuracy')
+          }}"
+- alias: Alarme Disparado
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.movimento_escada_baixo
+      from: "off"
+      to: "on"
+    - platform: state
+      entity_id:
+        - binary_sensor.movimento_escada_cima
+      from: "off"
+      to: "on"
+    - platform: state
+      entity_id:
+        - binary_sensor.movimento_garagem
+      from: "off"
+      to: "on"
+    - platform: state
+      entity_id:
+        - binary_sensor.porta_da_frente
+      from: "off"
+      to: "on"
+    - platform: state
+      entity_id:
+        - binary_sensor.porta_de_tras
+      from: "off"
+      to: "on"
+  condition:
+    condition: or
+    conditions:
+      - condition: state
+        entity_id: alarm_control_panel.alarme
+        state: armed_away
+      - condition: state
+        entity_id: alarm_control_panel.alarme
+        state: triggered
+  action:
+    - service: alarm_control_panel.alarm_trigger
+      entity_id: alarm_control_panel.alarme
+    - service: notify.mobile_app_s20
+      data:
+        title: ALARME!!!
+        message: Alarme em {{ trigger.from_state.attributes.friendly_name }}
+# - id: TesteNotificacao
+#   alias: TesteNotificacao
+#   trigger:
+#     - platform: state
+#       entity_id: light.luz_da_sala
+#       to: "on"
+#   action:
+#     - service: notify.telegram
+#       data:
+#         title: "Teste de Luz"
+#         message: "Teste de Luz"
+#         data:
+#           inline_keyboard:
+#             - "Desligar luz:/desligar_luz_sala, Ligar Luzes:/ligar_luzes_sala"
+
+# - alias: "TelegramTeste1"
+#   trigger:
+#     - platform: event
+#       event_type: telegram_callback
+#       event_data:
+#         command: "/desligar_luz_sala"
+#   action:
+#     - service: homeassistant.turn_off
+#       entity_id: light.luz_da_sala
+
+# - alias: Alexa Actionable 1
+#   description: ""
+#   trigger:
+#     - platform: sun
+#       event: sunrise
+#   condition: []
+#   action:
+#     - service: script.activate_alexa_actionable_notification
+#       data:
+#         text:
+#           The front door has been unlocked for 5 mins,
+#            would you like me to lock it?
+#         event_id: actionable_notification_lock_left_unlocked
+#         alexa_device: media_player.kitchen_echo
+#   mode: single
+# - alias: Alexa Actionable Response 1
+#   description: ""
+#   trigger:
+#     - platform: event
+#       event_type: alexa_actionable_notification
+#       event_data:
+#         event_id: actionable_notification_lock_left_unlocked
+#         event_response_type: ResponseYes
+#   condition: []
+#   action:
+#     - service: notify.mobile_app_marks_iphone_xs_max
+#       data:
+#         title: Alexa Actionable Notificiation
+#         message: This is an Alexa Actionable Notification
+#   mode: single
+# - alias: Alexa Actionable 2 (empty kitchen)
+#   description: ""
+#   trigger:
+#     - platform: state
+#       entity_id: binary_sensor.presence_12
+#       to: "off"
+#       for: "minutes: 30"
+#   condition:
+#     - condition: state
+#       entity_id: light.kitchen_light
+#       state: "on"
+#   action:
+#     - service: script.activate_alexa_actionable_notification
+#       data:
+#         text: the kitchen has been empty for a while.
+#            Should I turn off the lights
+#         event_id: actionable_notification_kitchen_lights
+#         alexa_device: media_player.kitchen_echo
+#   mode: single
+# - alias: Alexa Actionable Response 2 (empty kitchen)
+#   description: ""
+#   trigger:
+#     - platform: event
+#       event_type: alexa_actionable_notification
+#       event_data:
+#         event_id: actionable_notification_kitchen_lights
+#         event_response_type: ResponseYes
+#   condition: []
+#   action:
+#     - service: light.turn_off
+#       target:
+#         entity_id: light.light_1
+#   mode: single

@@ -1,0 +1,112 @@
+esphome:
+  name: portao_garagem
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  use_address: 192.168.2.188
+
+api:
+  password: !secret api_password
+
+logger:
+
+ota:
+  password: !secret api_password
+
+remote_receiver:
+  pin: D2
+  dump: rc_switch
+  filter: 250us
+  idle: 4ms
+  buffer_size: 2kb
+  tolerance: 70%
+
+switch:
+  - platform: gpio
+    pin: D5
+    id: open_cover_switch
+    restore_mode: ALWAYS_OFF
+    interlock: [close_cover_switch]
+    interlock_wait_time: 0.5s
+  - platform: gpio
+    pin: D6
+    id: close_cover_switch
+    restore_mode: ALWAYS_OFF
+    interlock: [open_cover_switch]
+    interlock_wait_time: 0.5s
+
+binary_sensor:
+  - platform: template
+    name: "Portao da Garagem"
+    id: portao
+    lambda: 'return !id(closed_endstop).state;'
+    device_class: garage_door
+
+  - platform: gpio
+    pin:
+      number: D1
+      mode: INPUT_PULLUP
+      inverted: true
+    id: opened_endstop
+    name: Portao Aberto
+  - platform: gpio
+    pin:
+      number: D7
+      mode: INPUT_PULLUP
+      inverted: true
+    id: closed_endstop
+    name: Portao Fechado
+
+  - platform: remote_receiver
+    id: "RWVM_Fechar"
+    rc_switch_raw:
+      code: !secret rf_portao_1
+    filters:
+      delayed_off: 1s
+    on_press:
+      then:
+        # yamllint disable rule:line-length
+        lambda: !lambda |-
+          auto call = id(garagem).make_call();
+          if (id(garagem).current_operation == CoverOperation::COVER_OPERATION_IDLE) {
+            if (id(garagem).position == COVER_CLOSED) {
+              call.set_command_open();
+            } else {
+              call.set_command_close();
+            }
+          } else if (id(garagem).current_operation == CoverOperation::COVER_OPERATION_OPENING) {
+            call.set_command_stop();
+          } else if (id(garagem).current_operation == CoverOperation::COVER_OPERATION_CLOSING) {
+            call.set_command_stop();
+          }
+          call.perform();
+        # yamllint enable rule:line-length
+
+cover:
+  - platform: endstop
+    device_class: garage
+    id: garagem
+    name: "Garagem"
+
+    open_action:
+      - switch.turn_on: open_cover_switch
+      - logger.log: Abrindo portao
+    open_duration: 8.5s
+    open_endstop: opened_endstop
+
+    close_action:
+      - switch.turn_on: close_cover_switch
+      - logger.log: Fechando portao
+
+    close_duration: 8.5s
+    close_endstop: closed_endstop
+
+    stop_action:
+      - switch.turn_off: open_cover_switch
+      - switch.turn_off: close_cover_switch
+
+    max_duration: 10s

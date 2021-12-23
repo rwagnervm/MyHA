@@ -1,0 +1,194 @@
+esphome:
+  name: luz_sala
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  use_address: 192.168.2.249
+
+api:
+  password: !secret api_password
+
+logger:
+
+ota:
+  password: !secret api_password
+
+binary_sensor:
+  - platform: gpio
+    id: swt1
+    pin:
+      number: D1
+      mode: INPUT_PULLUP
+    on_state:
+      - light.toggle: light1
+  - platform: gpio
+    id: swt2
+    pin:
+      number: D7
+      mode: INPUT_PULLUP
+    on_state:
+      - light.toggle: light2
+  - platform: gpio
+    id: swt3
+    pin:
+      number: D5
+      mode: INPUT_PULLUP
+    on_state:
+      - homeassistant.service:
+          service: homeassistant.toggle
+          data: {"entity_id": "light.luz_da_escada_1"}
+
+  - platform: template
+    name: "Porta da Frente"
+#    optimistic: true
+    id: bs_porta_frente
+    lambda: 'return id(porta_frente).state;'
+    device_class: door
+
+  - platform: template
+    name: "Porta de Tras"
+#    optimistic: true
+    id: bs_porta_tras
+    lambda: 'return id(porta_tras).state;'
+    device_class: door
+    # on_press:
+    #   - switch.template.publish:
+    #       id: porta_tras
+    #       state: ON
+    # on_release:
+    #   - switch.template.publish:
+    #       id: porta_tras
+    #       state: OFF
+
+  - platform: remote_receiver
+    id: PortaFrenteFechada
+    rc_switch_raw:
+      code: '010010111000011100001110'
+      protocol:
+        pulse_length: 454
+    internal: true
+    on_press:
+      switch.template.publish:
+        id: porta_frente
+        state: OFF
+
+  - platform: remote_receiver
+    id: PortaFrenteAberta
+    rc_switch_raw:
+      code: '010010111000011100001010'
+      protocol:
+        pulse_length: 454
+    internal: true
+    on_press:
+      switch.template.publish:
+        id: porta_frente
+        state: ON
+
+  - platform: remote_receiver
+    id: PortaTrasFechada
+    rc_switch_raw:
+      code: '001111001011100100001110'
+    internal: true
+    on_press:
+      switch.template.publish:
+        id: porta_tras
+        state: OFF
+
+  - platform: remote_receiver
+    id: PortaTrasAberta
+    rc_switch_raw:
+      code: '001111001011100100001010'
+    internal: true
+    on_press:
+      switch.template.publish:
+        id: porta_tras
+        state: ON
+
+  - platform: remote_receiver
+    id: LigarAlarme
+    rc_switch_raw:
+      code: '111111110101111101111000'
+    internal: true
+    on_press:
+      - homeassistant.service:
+          service: alarm_control_panel.alarm_arm_away
+          data: {"entity_id": "alarm_control_panel.home_alarm"}
+  - platform: remote_receiver
+    id: DesligarAlarme
+    rc_switch_raw:
+      code: '111111110101111101110010'
+    internal: true
+    on_press:
+      - homeassistant.service:
+          service: alarm_control_panel.alarm_disarm
+          data: {"entity_id": "alarm_control_panel.home_alarm"}
+
+  - platform: remote_receiver
+    name: Movimento Escada Baixo
+    device_class: motion
+    rc_switch_raw:
+      code: '111111000110111111101110'
+    filters:
+      - delayed_off: 2s
+  - platform: remote_receiver
+    name: Movimento Escada Cima
+    device_class: motion
+    rc_switch_raw:
+      code: '111111000111100000011110'
+    filters:
+      - delayed_off: 2s
+  - platform: remote_receiver
+    name: Movimento Garagem
+    device_class: motion
+    rc_switch_raw:
+      code: '111111000111100010001110'
+    filters:
+      - delayed_off: 2s
+
+output:
+  - platform: gpio
+    id: relay1
+    pin: D6
+  - platform: gpio
+    id: relay2
+    pin: D8
+
+light:
+  - platform: binary
+    id: light1
+    name: Luz da Sala
+    output: relay1
+  - platform: binary
+    id: light2
+    name: Luz da Garagem
+    output: relay2
+
+status_led:
+  pin:
+    number: D4
+    inverted: true
+
+switch:
+  - platform: template
+    optimistic: true
+    id: porta_frente
+    name: Porta da Frente
+    restore_state: true
+  - platform: template
+    optimistic: true
+    id: porta_tras
+    name: Porta de Tras
+    restore_state: true
+
+remote_receiver:
+  pin:
+    number: D2
+    mode: INPUT_PULLUP
+  dump: rc_switch
+  tolerance: 75%
+  filter: 350us
+  buffer_size: 2kb

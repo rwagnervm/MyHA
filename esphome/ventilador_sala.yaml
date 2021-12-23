@@ -1,0 +1,98 @@
+esphome:
+  name: ventilador_sala
+  platform: ESP8266
+  board: d1_mini
+  includes:
+    - fan.h
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  use_address: 192.168.2.205
+
+api:
+  password: !secret api_password
+
+logger:
+
+ota:
+  password: !secret api_password
+
+fan:
+  - platform: speed
+    id: vent
+    name: "Ventilador da Sala"
+    output: fanFloat
+
+binary_sensor:
+  - platform: gpio
+    id: ventilador_sala_1
+    pin:
+      number: D1
+      mode: INPUT_PULLUP
+      inverted: true
+    on_press:
+      - fan.turn_on:
+          id: vent
+          speed: 33
+    on_release:
+      - fan.turn_off: vent
+  - platform: gpio
+    id: ventilador_sala_2
+    pin:
+      number: D5
+      mode: INPUT_PULLUP
+      inverted: true
+    on_press:
+      - fan.turn_on:
+          id: vent
+          speed: 66
+    on_release:
+      - fan.turn_off: vent
+  - platform: gpio
+    id: ventilador_sala_3
+    pin:
+      number: D7
+      mode: INPUT_PULLUP
+      inverted: true
+    on_press:
+      - fan.turn_on:
+          id: vent
+          speed: 100
+    on_release:
+      - fan.turn_off: vent
+  - platform: remote_receiver
+    id: btn_vermelho
+    nec:
+      address: 0xFB04
+      command: 0x8D72
+    on_press:
+      - fan.toggle: vent
+  - platform: remote_receiver
+    id: btn_verde
+    nec:
+      address: 0xFB04
+      command: 0x8E71
+    on_press:
+      - homeassistant.service:
+          service: homeassistant.toggle
+          data: {"entity_id": "light.luz_da_sala"}
+
+output:
+  - platform: custom
+    type: float
+    lambda: |-
+      auto fanFloatOutput = new FanFloatOutput();
+      App.register_component(fanFloatOutput);
+      return {fanFloatOutput};
+
+    outputs:
+      id: fanFloat
+
+remote_receiver:
+  pin:
+    number: D3
+    mode: INPUT_PULLUP
+    inverted: true
+  dump: nec

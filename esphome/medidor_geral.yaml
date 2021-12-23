@@ -1,0 +1,39 @@
+esphome:
+  name: medidor_geral
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  use_address: 192.168.2.121
+
+api:
+  password: !secret api_password
+
+logger:
+
+ota:
+  password: !secret api_password
+
+uart:
+  - id: ubus1
+    tx_pin: D2
+    rx_pin: D1
+    baud_rate: 9600
+    stop_bits: 1
+
+sensor:
+  - platform: pzem004t
+    uart_id: ubus1
+    current:
+      name: "Corrente Geral"
+    voltage:
+      name: "Voltagem Geral"
+    power:
+      name: "Potencia Geral"
+      id: potencia_geral
+    energy:
+      name: "Consumo Total"
+    update_interval: 2s

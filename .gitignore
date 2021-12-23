@@ -1,0 +1,16 @@
+*
+!.gitignore
+!.yamllint
+!*.md
+!*.yaml
+!esphome/
+!esphome/*.yaml
+!esphome/*.h
+ip_bans.yaml
+known_devices.yaml
+secrets.yaml
+esphome/secrets.yaml
+!.stubs/
+!.stubs/**
+!custom_components/
+!custom_components/**

@@ -1,0 +1,62 @@
+escada_binary_sensors:
+  entities:
+    - binary_sensor.movimento_escada_cima
+    - binary_sensor.movimento_escada_baixo
+
+luzes_casa:
+  entities:
+    - group.luzes_baixo
+    - group.luzes_cima
+
+todos_dispositivos:
+  entities:
+    - light.luz_da_garagem
+    - light.luz_da_sala
+    - light.luz_da_sala_2
+    - light.luz_da_sala_3
+    - light.luz_da_cozinha
+    - light.luz_do_teto_do_lavabo
+    - light.luz_do_espelho_do_lavabo
+    - light.luz_do_quarto_da_bagunca
+    - light.luz_da_area_de_servico
+    - light.luz_do_quintal
+    - light.luz_do_aquario
+    - light.luz_da_escada_1
+    - light.luz_da_escada_teto
+    - light.luz_do_quarto
+    - light.luz_do_teto_do_banheiro
+    - light.luz_do_espelho_do_banheiro
+    - light.luz_da_varanda
+    - light.luz_do_quarto_dos_meninos
+    - light.luz_da_varanda_de_tras
+    - light.luminaria_dos_meninos
+    - fan.ventilador_da_sala
+    - fan.ventilador_dos_meninos
+    - climate.ar_condicionado_do_quarto
+    - climate.ar_condicionado_dos_meninos
+
+luzes_cima:
+  entities:
+    - light.luz_da_escada_1
+    - light.luz_da_escada_teto
+    - light.luz_do_quarto
+    - light.luz_do_teto_do_banheiro
+    - light.luz_do_espelho_do_banheiro
+    - light.luz_da_varanda
+    - light.luz_do_quarto_dos_meninos
+    - light.luz_da_varanda_de_tras
+    - light.luminaria_dos_meninos
+
+luzes_baixo:
+  entities:
+    - light.luz_da_garagem
+    - light.luz_da_sala
+    - light.luz_da_sala_2
+    - light.luz_da_sala_3
+    - light.luz_da_cozinha
+    - light.luz_do_teto_do_lavabo
+    - light.luz_do_espelho_do_lavabo
+    - light.luz_do_quarto_da_bagunca
+    - light.luz_da_area_de_servico
+    - light.luz_do_quintal
+    - light.luz_do_aquario
