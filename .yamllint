@@ -21,5 +21,6 @@ rules:
   line-length:
     level: warning
     allow-non-breakable-inline-mappings: true
-  new-line-at-end-of-file: enable
+  new-line-at-end-of-file: disable
+  trailing-spaces: disable
   truthy: disable
