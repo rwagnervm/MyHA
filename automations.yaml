@@ -69,7 +69,7 @@
   action:
     - service: homeassistant.turn_on
       entity_id: light.luz_da_garagem
-    - delay: 120s
+    - delay: 120
     - service: homeassistant.turn_off
       entity_id: light.luz_da_garagem
 
@@ -126,7 +126,7 @@
                 actions:
                   - action: fechar_portao_notification
                     title: Fechar Portão
-          - delay: 00:00:15
+          - delay: 00:01:00
         until:
           - condition: state
             entity_id: binary_sensor.portao_da_garagem
@@ -159,7 +159,7 @@
     condition: and
     conditions:
       - condition: state
-        entity_id: light.luz_da_garagem
+        entity_id: light.luz_da_escada_1
         state: "off"
       - condition: or
         conditions:
@@ -172,7 +172,7 @@
   action:
     - service: homeassistant.turn_on
       entity_id: light.luz_da_escada_1
-    - delay: 20s
+    - delay: 20
     - service: homeassistant.turn_off
       entity_id: light.luz_da_escada_1
 
@@ -180,9 +180,7 @@
   alias: Aspirador Velocidade
   trigger:
     platform: template
-    value_template:
-      "{{state_attr('vacuum.hx_x506_cc_50_e3_59_15_b1', 'raw_state')
-      == 'AutoClean'}}"
+    value_template: "{{state_attr('vacuum.hx_x506_cc_50_e3_59_15_b1', 'raw_state') == 'AutoClean'}}"
   action:
     - service: vacuum.set_fan_speed
       data:
@@ -192,9 +190,7 @@
   alias: Aspirador Carregar
   trigger:
     platform: template
-    value_template:
-      "{{state_attr('vacuum.hx_x506_cc_50_e3_59_15_b1', 'raw_state')
-      == 'BackCharging'}}"
+    value_template: "{{state_attr('vacuum.hx_x506_cc_50_e3_59_15_b1', 'raw_state') == 'BackCharging'}}"
   action:
     - service: notify.mobile_app_s20
       data_template:
@@ -342,6 +338,40 @@
       data:
         title: ALARME!!!
         message: Alarme em {{ trigger.from_state.attributes.friendly_name }}
+
+- id: LigarTimerArMeninos
+  alias: LigarTimerArMeninos
+  trigger:
+    - platform: state
+      entity_id: input_boolean.ar_meninos_timer_enabled
+      to: "on"
+  action:
+    - service: timer.start
+      entity_id: timer.ar_meninos_timer
+      data_template:
+        duration: "{{ states('input_number.ar_meninos_timer_minutes') | int * 60 }}"
+- id: DesligarTimerArMeninos
+  alias: DesligarTimerArMeninos
+  trigger:
+    - platform: state
+      entity_id: input_boolean.ar_meninos_timer_enabled
+      to: "off"
+  action:
+    - service: timer.cancel
+      entity_id: timer.ar_meninos_timer
+- alias: TimerArMeninos
+  trigger:
+    platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.sleep
+  action:
+    - service: input_boolean.turn_off
+      entity_id: input_boolean.ar_meninos_timer_enabled
+    - service: fan.turn_on
+      entity_id: fan.ventilador_dos_meninos
+    - service: climate.turn_off
+      entity_id: climate.ar_condicionado_dos_meninos
 # - id: TesteNotificacao
 #   alias: TesteNotificacao
 #   trigger:

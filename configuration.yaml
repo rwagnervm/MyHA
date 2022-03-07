@@ -37,11 +37,6 @@ media_player:
     access_token: !secret tv_quarto_access_token
 
 binary_sensor:
-  - platform: ping
-    host: 192.168.2.215
-    count: 1
-    scan_interval: 5
-    name: Ping
   - platform: template
     sensors:
       dirigindo:
@@ -49,31 +44,6 @@ binary_sensor:
         # yamllint disable rule:line-length
         value_template: "{{'90:3A:E6:18:2F:F8' in state_attr('sensor.s20_bluetooth_connection', 'connected_paired_devices') }}"
         # yamllint enable rule:line-length
-#  - platform: mqtt
-#    state_topic: "wallpanel/sala/sensor/motion"
-#    name: "Motion"
-#    payload_on: '{"value":true}'
-#    payload_off: '{"value":false}'
-#    device_class: motion
-#  - platform: mqtt
-#    state_topic: "wallpanel/sala/sensor/face"
-#    name: "Face Detected"
-#    payload_on: '{"value":true}'
-#    payload_off: '{"value":false}'
-#    device_class: motion
-
-#device_tracker:
-#  - platform: bluetooth_tracker
-#    new_device_defaults:
-#      track_new_devices: true
-#  - platform: bluetooth_le_tracker
-#    new_device_defaults:
-#      track_new_devices: true
-
-# - platform: luci
-#   host: 192.168.1.1
-#   username: root
-#   password: xxx
 
 sensor:
   - platform: command_line
@@ -85,19 +55,28 @@ sensor:
 
 template:
   - sensor:
-      - name: Ping
-        state: >
-          {{ state_attr('binary_sensor.ping', 'round_trip_time_avg') }}
-        unit_of_measurement: ms
       - name: Consumo da Casa
         unit_of_measurement: W
         # yamllint disable rule:line-length
         state: "{{ (states.sensor.potencia_geral.state|float)-(states.sensor.consumo_da_geladeira.state|float)}}"
         # yamllint enable rule:line-length
-#  - platform: mqtt
-#    state_topic: "wallpanel/sala/sensor/qrcode"
-#    name: "QR Code"
-#    value_template: ""
+
+input_number:
+  ar_meninos_timer_minutes:
+    name: "Ar Condicionado dos Meninos - Timer"
+    min: 0
+    max: 180
+    step: 1
+
+input_boolean:
+  ar_meninos_timer_enabled:
+    name: "Ar Condicionado dos Meninos - Timer"
+    initial: off
+    icon: mdi:timelapse
+
+timer:
+  ar_meninos_timer:
+    name: Ar Condicionado dos Meninos - Timer
 
 google_assistant:
   project_id: !secret google_assistant_project_id
@@ -152,29 +131,6 @@ alexa:
     entity_config:
       vacuum.hx_x506_cc_50_e3_59_15_b1:
         name: "C3 do Pó"
-
-intent:
-intent_script:
-  LocateIntent:
-    action:
-      service: notify.telegram
-      data:
-        title: "Estão lhe procurando"
-        message: "Estão lhe procurando"
-    speech:
-      type: plain
-      text: Em casa
-    card:
-      type: simple
-      title: Location queried
-      content: Ask Home Assistant about user location
-
-#input_text:
-#  alexa_actionable_notification:
-#    name: Alexa Actionable Notification Holder
-#    max: 255
-#    initial: '{"text": "This is a test of the alexa actions custom skill.
-# Did it work?", "event": "actionable.skill.test"}'
 
 telegram_bot:
   - platform: polling

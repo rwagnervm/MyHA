@@ -14,15 +14,18 @@ from homeassistant.helpers.entity import Entity
 
 import owm2json
 
+DOMAIN = "owm2json"
+
 _LOGGER = logging.getLogger(__name__)
 
-MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=10)
+SCAN_INTERVAL = timedelta(minutes=10)
+MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=5)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_API_KEY): cv.string,
     vol.Required(CONF_LATITUDE): cv.string,
-    vol.Required(CONF_LONGITUDE): cv.string,
-    # vol.Required("api_list"): cv.ensure_list,
+    vol.Required(CONF_LONGITUDE): cv.string
+    # vol.Required("refresh_interval"): cv.positive_int
 })
 
 SENSOR_PREFIX_ROOT = 'OWM '
@@ -39,7 +42,7 @@ SENSOR_TYPES = {
     'pm10': ['Coarse particles (PM10)', 'μg/m3', 'mdi:grain'],
     'aqi': ['Overall Air Quality', '', 'mdi:lungs'],
     'uvi': ['Ultraviolet index', 'idx', 'mdi:hazard-lights'],
-    'forecast': ['Forecast', '', 'mdi:eye-arrow-right'],
+    'forecast': ['Forecast', '', 'mdi:eye-arrow-right']
 }
 
 
@@ -78,7 +81,7 @@ class OwmPollutionData(object):
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     def update(self, sensorType):
         _LOGGER.debug("Updating OWM pollution sensors")
-        _LOGGER.debug("sensorType: " + sensorType)
+  
         myOWM = owm2json.owmRequestor(self.api_list, self.lat, self.lon, self.appid)
         try:
             self.data = json.loads(myOWM.GetData())
@@ -181,7 +184,12 @@ class OwmPollutionSensor(Entity):
             # onecall
 
             elif self.type == 'uvi':
-                self._state = float(owmData["onecall"]["current"]["uvi"])
+                try:
+                    self._state = float(owmData["onecall"]["current"]["uvi"])
+                except:
+                    _LOGGER.warning("Did not get proper reply from 'onecall'.")
+                    self._state = -1
+                
 
         except ValueError:
             self._state = None

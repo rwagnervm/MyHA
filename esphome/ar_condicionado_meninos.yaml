@@ -13,6 +13,7 @@ api:
   password: !secret api_password
 
 logger:
+  level: INFO
 
 ota:
   password: !secret api_password
@@ -30,11 +31,11 @@ sensor:
     update_interval: 2s
 
 light:
-  - platform: fastled_clockless
-    chipset: WS2811
+  - platform: neopixelbus
+    variant: WS2811
     pin: D1
     num_leds: 117
-    rgb_order: BRG
+    type: BRG
     id: led
     name: "Luminaria dos meninos"
     effects:
@@ -76,7 +77,7 @@ binary_sensor:
   - platform: remote_receiver
     id: "on"
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0xF20D
     on_press:
       - if:
@@ -94,7 +95,7 @@ binary_sensor:
   - platform: remote_receiver
     id: "off"
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0xE01F
     on_press:
       - homeassistant.service:
@@ -103,7 +104,7 @@ binary_sensor:
   - platform: remote_receiver
     id: brightness_up
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0xF609
     on_press:
       then:
@@ -113,7 +114,7 @@ binary_sensor:
   - platform: remote_receiver
     id: brightness_down
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0xE21D
     on_press:
       then:
@@ -123,8 +124,8 @@ binary_sensor:
   - platform: remote_receiver
     id: red
     nec:
-      address: 0x00FF
-      command: 0x9867
+      address: 0xFF00
+      command: 0xE619
     on_press:
       then:
         - light.turn_on:
@@ -135,8 +136,8 @@ binary_sensor:
   - platform: remote_receiver
     id: green
     nec:
-      address: 0x00FF
-      command: 0xD827
+      address: 0xFF00
+      command: 0xE41B
     on_press:
       then:
         - light.turn_on:
@@ -147,8 +148,8 @@ binary_sensor:
   - platform: remote_receiver
     id: blue
     nec:
-      address: 0x00FF
-      command: 0x8877
+      address: 0xFF00
+      command: 0xEE11
     on_press:
       then:
         - light.turn_on:
@@ -159,8 +160,8 @@ binary_sensor:
   - platform: remote_receiver
     id: white
     nec:
-      address: 0x00FF
-      command: 0xA857
+      address: 0xFF00
+      command: 0xEA15
     on_press:
       then:
         - light.turn_on:
@@ -169,9 +170,18 @@ binary_sensor:
             green: 100%
             blue: 100%
   - platform: remote_receiver
+    id: ventilador
+    nec:
+      address: 0xFF00
+      command: 0xB24D
+    on_press:
+      - homeassistant.service:
+          service: homeassistant.toggle
+          data: {"entity_id": "fan.ventilador_dos_meninos"}
+  - platform: remote_receiver
     id: R2
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0xE817
     on_press:
       then:
@@ -183,7 +193,7 @@ binary_sensor:
   - platform: remote_receiver
     id: R3
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0x02FD
     on_press:
       then:
@@ -195,7 +205,7 @@ binary_sensor:
   - platform: remote_receiver
     id: R4
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0x50AF
     on_press:
       then:
@@ -207,7 +217,7 @@ binary_sensor:
   - platform: remote_receiver
     id: R5
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0x38C7
     on_press:
       then:
@@ -220,7 +230,7 @@ binary_sensor:
   - platform: remote_receiver
     id: G2
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0x48B7
     on_press:
       then:
@@ -232,7 +242,7 @@ binary_sensor:
   - platform: remote_receiver
     id: G3
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0x32CD
     on_press:
       then:
@@ -244,7 +254,7 @@ binary_sensor:
   - platform: remote_receiver
     id: G4
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0x7887
     on_press:
       then:
@@ -256,7 +266,7 @@ binary_sensor:
   - platform: remote_receiver
     id: G5
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0x28D7
     on_press:
       then:
@@ -269,7 +279,7 @@ binary_sensor:
   - platform: remote_receiver
     id: B2
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0x6897
     on_press:
       then:
@@ -281,7 +291,7 @@ binary_sensor:
   - platform: remote_receiver
     id: B3
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0x20DF
     on_press:
       then:
@@ -293,7 +303,7 @@ binary_sensor:
   - platform: remote_receiver
     id: B4
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0x708F
     on_press:
       then:
@@ -305,7 +315,7 @@ binary_sensor:
   - platform: remote_receiver
     id: B5
     nec:
-      address: 0x00FF
+      address: 0xFF00
       command: 0xF00F
     on_press:
       then:
