@@ -32,7 +32,6 @@ light:
     type: GRB
     id: led
     name: "Luz do aquario"
-    max_refresh_rate: 32ms
     effects:
       - random:
       - strobe:
