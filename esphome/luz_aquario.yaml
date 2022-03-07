@@ -25,11 +25,11 @@ switch:
     id: relay
 
 light:
-  - platform: fastled_clockless
-    chipset: WS2812B
+  - platform: neopixelbus
+    variant: WS2812B
     pin: GPIO2
     num_leds: 20
-    rgb_order: GRB
+    type: GRB
     id: led
     name: "Luz do aquario"
     max_refresh_rate: 32ms
