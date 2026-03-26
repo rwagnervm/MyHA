@@ -1,0 +1,26 @@
+---
+extends: default
+
+rules:
+  braces:
+    level: warning
+  brackets:
+    level: warning
+  colons:
+    level: warning
+  commas:
+    level: warning
+  document-start: disable
+  empty-lines:
+    level: warning
+  hyphens:
+    level: warning
+  indentation:
+    level: warning
+    indent-sequences: consistent
+  line-length:
+    level: warning
+    allow-non-breakable-inline-mappings: true
+  new-line-at-end-of-file: disable
+  trailing-spaces: disable
+  truthy: disable

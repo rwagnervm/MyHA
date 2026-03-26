@@ -1,0 +1,14 @@
+*
+!.gitignore
+!.yamllint
+!*.md
+!*.yaml
+!esphome/
+!esphome/*.yaml
+!esphome/*.h
+secrets.yaml
+esphome/secrets.yaml
+!.stubs/
+!.stubs/**
+!esphome/custom_components/
+!esphome/custom_components/**

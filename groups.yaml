@@ -1,0 +1,58 @@
+escabinary_sensors:
+  entities:
+    - binary_sensor.movimento_escada_cima
+    - binary_sensor.movimento_escada_baixo
+
+luzes_casa:
+  entities:
+    - group.luzes_baixo
+    - group.luzes_cima
+
+todos_dispositivos:
+  entities:
+    - light.luz_garagem
+    - light.luz_sala
+    - light.luz_mesa
+    - light.luz_sala_2
+    - light.luz_cozinha
+    - light.luz_lavabo_teto
+    - light.luz_lavabo_espelho
+    - light.luz_quarto_pedro
+    - light.luz_area_servico
+    - light.luz_quintal
+    - light.luz_esca1
+    - light.luz_escateto
+    - light.luz_quarto_wagner
+    - light.luz_banheiro_teto
+    - light.luz_banheiro_espelho
+    - light.luz_varanda
+    - light.luz_quarto_paula
+    - light.luz_varantras
+    - fan.ventilador_paula
+    - fan.ventilador_quarto_wagner
+    - climate.ar_condicionado_quarto_wagner
+    - climate.ar_condicionado_paula
+
+luzes_cima:
+  entities:
+    - light.luz_esca1
+    - light.luz_escateto
+    - light.luz_quarto_wagner
+    - light.luz_banheiro_teto
+    - light.luz_banheiro_espelho
+    - light.luz_varanda
+    - light.luz_quarto_paula
+    - light.luz_varantras
+
+luzes_baixo:
+  entities:
+    - light.luz_garagem
+    - light.luz_sala
+    - light.luz_sala_mesa
+    - light.luz_sala_2
+    - light.luz_cozinha
+    - light.luz_lavabo_teto
+    - light.luz_lavabo_espelho
+    - light.luz_quarto_pedro
+    - light.luz_area_servico
+    - light.luz_quintal

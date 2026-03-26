@@ -1,0 +1,291 @@
+- id: Apagar_Luzes_Ao_Sair
+  alias: Apagar as luzes ao sair
+  mode: single
+  trigger:
+    - platform: state
+      entity_id: person.roberto_wagner
+      to: not_home
+      for:
+        minutes: 2
+  condition:
+    - condition: state
+      entity_id: group.todos_dispositivos
+      state: "on"
+  action:
+    - service: alarm_control_panel.alarm_arm_away
+      entity_id: alarm_control_panel.alarme
+      data:
+        code: !secret alarm_code
+    - service: notify.mobile_app_s23
+      data:
+        data:
+          ttl: 0
+          priority: high
+          notification_icon: mdi:home-lightbulb
+          tag: luzes-ligadas
+          actions:
+            - action: desligar_luzes_notification
+              title: Desligar luzes
+          title: Existem luzes ligadas em casa. Deseja desligá-las?
+        message:
+          "{{ expand('group.todos_dispositivos') | selectattr('state', 'equalto',
+          'on') | map(attribute='name') | list | join(', ') }}"
+
+#################
+### Paralalos ###
+#################
+
+### Paralalo Banheiro ###
+- alias: "Sincronizar Luzes do Banheiro"
+  id: sincronizar_luzes_banheiro
+  trigger:
+    - platform: state
+      entity_id:
+        - light.luz_banheiro_teto
+        - light.luz_banheiro_espelho
+  condition:
+    # Esta condição previne loops infinitos. A automação só executa se a mudança de estado
+    # foi iniciada por um usuário (na interface ou fisicamente) e não por outra automação.
+    - condition: template
+      value_template: "{{ trigger.to_state.context.parent_id is none or trigger.to_state.context.user_id is not none }}"
+    - condition: template
+      value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
+  action:
+    # Define a luz alvo como sendo a outra luz do par.
+    - variables:
+        target_light: >
+          {{ iif(trigger.entity_id == 'light.luz_banheiro_teto', 'light.luz_banheiro_espelho', 'light.luz_banheiro_teto') }}
+    # Só executa a ação se os estados já não forem iguais.
+    - condition: template
+      value_template: "{{ trigger.to_state.state != states(target_light) }}"
+    - service: "homeassistant.turn_{{ trigger.to_state.state }}"
+      target:
+        entity_id: "{{ target_light }}"
+  mode: single
+
+### Paralalo Lavabo ###
+- alias: "Sincronizar Luzes do Lavabo"
+  id: sincronizar_luzes_lavabo
+  trigger:
+    - platform: state
+      entity_id:
+        - light.luz_lavabo_teto
+        - light.luz_lavabo_espelho
+  condition:
+    # Esta condição previne loops infinitos. A automação só executa se a mudança de estado
+    # foi iniciada por um usuário (na interface ou fisicamente) e não por outra automação.
+    - condition: template
+      value_template: "{{ trigger.to_state.context.parent_id is none or trigger.to_state.context.user_id is not none }}"
+    - condition: template
+      value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
+  action:
+    # Define a luz alvo como sendo a outra luz do par.
+    - variables:
+        target_light: >
+          {{ iif(trigger.entity_id == 'light.luz_lavabo_teto', 'light.luz_lavabo_espelho', 'light.luz_lavabo_teto') }}
+    # Só executa a ação se os estados já não forem iguais.
+    - condition: template
+      value_template: "{{ trigger.to_state.state != states(target_light) }}"
+    - service: "homeassistant.turn_{{ trigger.to_state.state }}"
+      target:
+        entity_id: "{{ target_light }}"
+  mode: single
+
+### Garagem ###
+- id: LigarLuzGaragemAoDetectarMovimento
+  alias: Ligar a luz da garagem ao detectar movimento
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.portao_garagem
+        - binary_sensor.movimento_garagem
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: light.luz_garagem
+      state: "off"
+    - condition: or
+      conditions:
+        - condition: sun
+          after: sunset
+        - condition: sun
+          before: sunrise
+  action:
+    - service: homeassistant.turn_on
+      entity_id: light.luz_garagem
+
+- id: DesligarLuzGaragemAposAtraso
+  alias: Desligar a luz da garagem após ausência de movimento
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.movimento_garagem
+      to: "off"
+      for:
+        minutes: 2
+  condition:
+    - condition: state
+      entity_id: binary_sensor.portao_garagem
+      state: "off"
+    - condition: state
+      entity_id: light.luz_garagem
+      state: "on"
+  action:
+    - service: homeassistant.turn_off
+      entity_id: light.luz_garagem
+
+- id: NotificarCampainha
+  alias: Notificar Campainha
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.campainha
+      from: "off"
+      to: "on"
+  variables:
+    time_str: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
+    arquivo_salvar: "/config/www/snapshots/campainha_rua1_{{ time_str }}.jpg"
+    arquivo_ler: "/local/snapshots/campainha_rua1_{{ time_str }}.jpg"
+  action:
+    - service: shell_command.snapshot_rua1
+      data:
+        file: "{{ arquivo_salvar }}"
+    - service: notify.mobile_app_s23
+      data:
+        message: Alguem tocou a campainha
+        data:
+          ttl: 0
+          priority: high
+          notification_icon: mdi:bell-ring
+          image: "{{ arquivo_ler }}"
+          clickAction: /dashboard-camera/camera1
+          tag: campainha
+    - service: media_player.play_media
+      target:
+        entity_id: media_player.echo_da_sala
+      data:
+        media_content_type: sound
+        media_content_id: amzn_sfx_doorbell_chime_01
+    - service: media_player.play_media
+      target:
+        entity_id: media_player.echo_da_sala
+      data:
+        media_content_type: custom
+        media_content_id: "mostre a câmera rua 1"
+#    - continue_on_error: true
+#      service: notify.tvquarto
+#      data:
+#        title: Casa
+#        message: Alguem tocou a campainha
+#        data:
+#          duration: 30
+#          image:
+#            path: "{{ arquivo_ler }}"
+- alias: notificar_portao_aberto
+  description: "Notificar quando abrir o portão da garagem"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.portao_garagem
+      from: "off"
+      to: "on"
+  variables:
+    time_str: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
+    file_garagem_save: "/config/www/snapshots/portao_aberto_{{ time_str }}.jpg"
+    file_garagem_read: "/local/snapshots/portao_aberto_{{ time_str }}.jpg"
+    file_rua_save: "/config/www/snapshots/portao_aberto_rua1_{{ time_str }}.jpg"
+  action:
+    - service: shell_command.snapshot_garagem
+      data:
+        file: "{{ file_garagem_save }}"
+    - service: notify.mobile_app_s23
+      data:
+        message: "Portão Aberto"
+        data:
+          ttl: 0
+          priority: high
+          notification_icon: mdi:garage-open-variant
+          image: "{{ file_garagem_read }}"
+          clickAction: /lovelace-camera/camera1
+          tag: portao-garagem
+          actions:
+            - action: fechar_portao_notification
+              title: Fechar Portão
+    - service: shell_command.snapshot_rua1
+      data:
+        file: "{{ file_rua_save }}"
+
+- alias: notificar_portao_fechado
+  description: "Notificar quando fechar o portão da garagem"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.portao_garagem
+      from: "on"
+      to: "off"
+  variables:
+    time_str: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
+    file_garagem_save: "/config/www/snapshots/portao_fechado_garagem_{{ time_str }}.jpg"
+    file_garagem_read: "/local/snapshots/portao_fechado_garagem_{{ time_str }}.jpg"
+    file_rua_save: "/config/www/snapshots/portao_fechado_rua1_{{ time_str }}.jpg"
+  action:
+    - service: shell_command.snapshot_garagem
+      data:
+        file: "{{ file_garagem_save }}"
+    - service: notify.mobile_app_s23
+      data:
+        message: "Portão Fechado"
+        data:
+          ttl: 0
+          priority: high
+          notification_icon: mdi:garage-variant
+          image: "{{ file_garagem_read }}"
+          clickAction: /lovelace-camera/camera1
+          tag: portao-garagem
+    - service: shell_command.snapshot_rua1
+      data:
+        file: "{{ file_rua_save }}"
+
+- id: NotificationAction_FecharPortao
+  alias: NotificationAction_FecharPortao
+  trigger:
+    - platform: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: fechar_portao_notification
+  action:
+    service: cover.close_cover
+    entity_id: cover.portao_garagem
+
+- id: Estacionando
+  alias: Estacionando
+  trigger:
+    platform: state
+    entity_id: binary_sensor.dirigindo
+    to: "off"
+  action:
+    - service: notify.mobile_app_s23
+      data:
+        message: request_location_update
+        data:
+          ttl: 0
+          priority: high
+    - wait_template: "{{ states.device_tracker.s23_rwvm.last_updated > states.automation.estacionando.attributes.last_triggered}}"
+      timeout: 10
+    - service: device_tracker.see
+      data:
+        dev_id: "wrv"
+        location_name: Estacionado
+        host_name: WRV
+        gps:
+          - "{{ state_attr('device_tracker.s23_rwvm', 'latitude') }}"
+          - "{{ state_attr('device_tracker.s23_rwvm', 'longitude') }}"
+        gps_accuracy: "{{ state_attr('device_tracker.s23_rwvm', 'gps_accuracy') }}"
+    - service: notify.mobile_app_s23
+      data:
+        message: Carro estacionado
+        data:
+          notification_icon: mdi:car-search
+          ttl: 0
+          priority: high
+          clickAction: /map
+          tag: wrv-estacionando
+          action_data:
+            latitude: "{{ state_attr('device_tracker.wrv', 'latitude') }}"
+            longitude: "{{ state_attr('device_tracker.wrv', 'longitude') }}"

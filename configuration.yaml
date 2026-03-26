@@ -1,0 +1,62 @@
+default_config:
+
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+group: !include groups.yaml
+
+alarm_control_panel:
+  - platform: manual
+    code: !secret alarm_code
+    name: Alarme
+    delay_time: 0
+    code_arm_required: false
+    arming_time: 0
+    trigger_time: 60000
+
+binary_sensor:
+  - platform: template
+    sensors:
+      dirigindo:
+        friendly_name: "Dirigindo"
+        value_template: "{{ '(Honda HFT)' in (state_attr('sensor.s23_rwvm_bluetooth_connection', 'connected_paired_devices') | string) }}"
+
+shell_command:
+  snapshot_rua1: !secret cmd_snapshot_rua1
+  snapshot_garagem: "wget 'http://127.0.0.1:1984/api/frame.jpeg?src=garagem' -O {{ file }}"
+
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.30.33.0/24
+    - 127.0.0.1/32
+    - 192.168.68.0/22
+
+google_assistant:
+  project_id: !secret google_assistant_project_id
+  report_state: true
+  service_account: !include SERVICE_ACCOUNT.json
+
+alexa:
+  smart_home:
+    locale: pt-BR
+
+lovelace:
+  mode: storage
+  dashboards:
+    lovelace-yaml:
+      mode: yaml
+      title: Wagner
+      icon: mdi:code-braces
+      show_in_sidebar: true
+      filename: dashboards/wagner.yaml
+
+mqtt:
+  camera:
+    - name: "ESP WHO Face"
+      topic: "espwho/face_image"
+      image_encoding: "b64"
+      unique_id: "camera.esp_who_face"
